@@ -31,8 +31,10 @@ jobs:
         shell: cmd
         run: |
           mkdir build_result
-          copy "build32\Release\dobby.dll" "build_result\dobby_x86.dll"
-          copy "build64\Release\dobby.dll" "build_result\dobby_x64.dll"
+          mkdir build_result\x86
+          mkdir build_result\x64
+          copy "build32\Release\*" "build_result\x86\"
+          copy "build64\Release\*" "build_result\x64\"
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
@@ -68,8 +70,10 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir build_result
-          cp build64/libdobby.so build_result/libdobby_x64.so
-          cp build86/libdobby.so build_result/libdobby_x86.so
+          mkdir build_result/x86
+          mkdir build_result/x64
+          cp build86/* build_result/x86/
+          cp build64/* build_result/x64/
           
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -95,7 +99,8 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir build_result
-          cp build64/libdobby.dylib build_result/libdobby_x64.dylib
+          mkdir build_result/x64
+          cp build64/* build_result/x64/
           
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
