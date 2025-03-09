@@ -36,8 +36,8 @@
 // ================================================================
 // GetProcessMemoryLayout
 
-static bool memory_region_comparator(MemoryRegion a, MemoryRegion b) {
-  return (a.address < b.address);
+static bool memory_region_comparator(const MemoryRegion &a, const MemoryRegion &b) {
+  return a.address < b.address;
 }
 
 std::vector<MemoryRegion> ProcessRuntimeUtility::GetProcessMemoryLayout() {
@@ -48,6 +48,7 @@ std::vector<MemoryRegion> ProcessRuntimeUtility::GetProcessMemoryLayout() {
   mach_vm_address_t addr = 0;
   mach_vm_size_t size = 0;
   natural_t depth = 0;
+
   while (true) {
     count = VM_REGION_SUBMAP_SHORT_INFO_COUNT_64;
     kern_return_t kr =
@@ -63,26 +64,28 @@ std::vector<MemoryRegion> ProcessRuntimeUtility::GetProcessMemoryLayout() {
     if (submap_info.is_submap) {
       depth++;
     } else {
-      MemoryPermission permission;
+      MemoryPermission permission = kNoAccess;
+
       if ((submap_info.protection & PROT_READ) && (submap_info.protection & PROT_WRITE)) {
-        permission = MemoryPermission::kReadWrite;
+        permission = kReadWrite;
       } else if ((submap_info.protection & PROT_READ) == submap_info.protection) {
-        permission = MemoryPermission::kRead;
+        permission = kRead;
       } else if ((submap_info.protection & PROT_READ) && (submap_info.protection & PROT_EXEC)) {
-        permission = MemoryPermission::kReadExecute;
+        permission = kReadExecute;
       } else {
         continue;
       }
-      MemoryRegion region = {(void *)addr, static_cast<size_t>(size), permission};
-#if 0
-      DLOG(0, "%p --- %p", addr, addr + size);
-#endif
-      ProcessMemoryLayout.push_back(region);
-      addr += size;
+
+      if (addr != 0 && size > 0) {
+        ProcessMemoryLayout.emplace_back(
+            MemoryRegion{reinterpret_cast<void *>(addr), static_cast<size_t>(size), permission});
+      }
     }
   }
 
-  std::sort(ProcessMemoryLayout.begin(), ProcessMemoryLayout.end(), memory_region_comparator);
+  if (!ProcessMemoryLayout.empty()) {
+    std::sort(ProcessMemoryLayout.begin(), ProcessMemoryLayout.end(), memory_region_comparator);
+  }
 
   return ProcessMemoryLayout;
 }
